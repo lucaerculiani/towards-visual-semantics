@@ -1,15 +1,16 @@
 set -e
-set -x
 
 
 datadir=dataset
 dataurl="https://ndownloader.figshare.com/files/28243401"
 dataname="embedded.zip"
+tmpdataname="embedded.zip.partial"
 if [ -f "$dataname" ] ; then
     echo "dataset '$dataname' already present, skipping download"
 else 
     echo "downloading dataset to '$datadir' folder"
-    wget -O $dataname $dataurl
+    wget -O $tmpdataname $dataurl
+    mv $tmpdataname $dataname
 fi
 if [ -d "$datadir" ] ; then
     echo " '$datadir' folder already present, skipping unpaking"
