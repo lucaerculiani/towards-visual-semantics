@@ -331,6 +331,55 @@ def session_accuracy(s_d, by_step=False):
     return (true_unk + true_inst_known + true_gen_known) / float(s_d[_OBJ_ID].shape[ax])
 
 
+def session_genus_accuracy(s_d, by_step=False):
+    same_genus = s_d["class"] == np.take_along_axis(s_d["class"], s_d["neigh"], axis=1)  
+
+    new_objs = np.concatenate([new_obj_in_seq(s) for s in s_d[_OBJ_ID]])
+
+    ax = 0 if by_step else 1 
+
+    true_unk = (new_objs & (s_d["pred"] < 0)).sum(axis=ax)
+
+    true_known_gen_level = ((~ new_objs) & (s_d["pred"] >= 0) & same_genus).sum(axis=ax)
+
+    return (true_unk + true_known_gen_level) / float(s_d[_OBJ_ID].shape[ax])
+
+
+def session_diff_accuracy(s_d):
+    by_step = True
+    same_obj = is_same_class(s_d["neigh"], s_d[_OBJ_ID])
+    same_genus = s_d["class"] == np.take_along_axis(s_d["class"], s_d["neigh"], axis=1)  
+
+    is_discr = ~s_d["ambiguous"]
+
+    new_objs = np.concatenate([new_obj_in_seq(s) for s in s_d[_OBJ_ID]])
+    fake_obj_id = s_d[_OBJ_ID].max() + 1
+    discr_objs = np.where(is_discr, s_d[_OBJ_ID], fake_obj_id)
+    new_discr_objs = np.concatenate([new_obj_in_seq(s) for s in discr_objs])
+
+    tmp_discr_obj_mat = known_class_mat(discr_objs, new_discr_objs)[:, :-1, :].cumsum(axis=2).astype(np.bool)
+    discr_obj_mat = np.zeros(tmp_discr_obj_mat.shape, dtype=np.bool)
+    discr_obj_mat[:, :, 1:] = tmp_discr_obj_mat[:, :, :-1]
+
+    ax = 0 if by_step else 1 
+
+    seen_discr = np.array([d[s, np.arange(d.shape[1])]
+                           for d, s in zip(discr_obj_mat, s_d[_OBJ_ID])])
+    true_unk = (new_objs & (s_d["pred"] < 0)).sum(axis=ax)
+
+    true_known_gen_level_mask = ((~ new_objs) & (s_d["pred"] >= 0) & same_genus)
+    tkgl_sum = true_known_gen_level_mask.sum(axis=ax)
+    tkgl_sum[:2] = np.where(tkgl_sum[:2] == 0, 1, tkgl_sum[:2])
+
+    true_inst_known = ((~ new_objs) & (s_d["pred"] > 0) & same_obj & is_discr & seen_discr & true_known_gen_level_mask).sum(axis=ax) / tkgl_sum
+
+
+    valid_gen = ~(is_discr & seen_discr)
+    true_gen_known = ((~ new_objs) & (s_d["pred"] == 0) & same_genus & valid_gen & true_known_gen_level_mask).sum(axis=ax) / tkgl_sum
+
+
+    return true_inst_known + true_gen_known
+
 def _get_cl_gt(s_d):
     cl = s_d["cc"][s_d["is_eval"]]
     gt = s_d[_OBJ_ID][s_d["is_eval"]]

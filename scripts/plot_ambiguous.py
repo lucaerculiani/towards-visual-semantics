@@ -38,7 +38,7 @@ def main(cmdline):
     assert len(labels) == len(data)
 
 
-    basenames = ["inst_e_acc", "sup", "gdn_acc"]
+    basenames = ["inst_e_acc", "genus_acc", "diff_acc"]
     base_path = Path(cmdline.output_file)
     if base_path.is_dir():
         outputs = [base_path / b for b in basenames]
@@ -51,14 +51,16 @@ def main(cmdline):
 
     yss = [
         np.vectorize(compute_inst_acc, signature="()->(n)")(data[:, 0]),
+        np.vectorize(compute_genus_acc, signature="()->(n)")(data[:, 0]),
+        np.vectorize(compute_diff_acc, signature="()->(n)")(data[:, 0]),
 #        np.vectorize(compute_total_supervision, signature="()->(n)")(data[:, 1, 0]),
 #        np.vectorize(compute_gen_diff_perf, signature="(),(),()->(n)")(data[:, 0, 0], data[:, 1, 0], data[:, 1, 1])
             ]
 
-    discard = [10]
-    ylims = [(0.1, 0.3)]
-    ylabs = ["accuracy"]
-    xlabs = ["iteration"] 
+    discard = [10] * 3
+    ylims = [(0.1, 0.3), (0.2, 0.6), (0.2, 0.6)]
+    ylabs = ["accuracy", None, None]
+    xlabs = ["iteration", None, None]
 
     for t in tables:
         print(tabulate(list(zip(labels, t))))
@@ -76,7 +78,7 @@ def main(cmdline):
 
 def plot_scatter(y, x, output_file):
     plt.clf()
-    fig = plt.figure(figsize=(6, 4))
+    fig = plt.figure(figsize=(4, 4))
 
     ax = fig.add_subplot(111)
     ax.grid()
@@ -108,7 +110,7 @@ def plot_generic(ys, x, labels, output_file, discard=0, **kwargs):
     if x is None:
         x = np.arange(len(ys[0]))
     plt.clf()
-    fig = plt.figure(figsize=(8, 4))
+    fig = plt.figure(figsize=(5,3.5))
     ax = fig.add_subplot(111)
     ax.grid()
     if "ylim" in kwargs and kwargs["ylim"] is not None:
@@ -123,8 +125,8 @@ def plot_generic(ys, x, labels, output_file, discard=0, **kwargs):
 
     for y, l, s in zip(ys, labels, _STYLES):
         ax.plot(x[discard:], y[discard:], s, label=l)
-    ax.legend()
-    fig.tight_layout()
+    ax.legend(ncol=2, columnspacing=1.2, loc="lower right")
+    fig.tight_layout(pad=0.7)
     #plt.subplots_adjust(top=0.99, bottom=0.08)
     fig.savefig(str(output_file) + ".png")
 
@@ -141,16 +143,33 @@ def compute_scatter(session_d, amb_session_d, amb_eval_d):
     return x, y
 
 
+def smooth_win(a, w):
+    ret = a.cumsum()
+
+    w = 5
+    ret[w:] = ret[w:] - ret[:-w]
+    return np.concatenate((a[:w-1], ret[w - 1:] / w))
+
+
 def compute_inst_acc(session_d):
 
     acc = ow.session_accuracy(session_d, by_step=True)
 
-    ret = acc.cumsum()
+    return smooth_win(acc, 5)
 
-    w = 5
-    ret[w:] = ret[w:] - ret[:-w]
-    return np.concatenate((acc[:w-1], ret[w - 1:] / w))
 
+def compute_diff_acc(session_d):
+
+    acc = ow.session_diff_accuracy(session_d)
+
+    return smooth_win(acc, 5)
+
+
+def compute_genus_acc(session_d):
+
+    acc = ow.session_genus_accuracy(session_d, by_step=True)
+
+    return smooth_win(acc, 5)
 
 
 if __name__ == '__main__':

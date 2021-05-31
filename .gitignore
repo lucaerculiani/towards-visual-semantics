@@ -1,7 +1,10 @@
 __pycache__/
 *.pyc
 
-*.DS_Store
+
+#dataset
+experiments/frontiers/dataset/*
+
 
 # swap files
 *.swp
