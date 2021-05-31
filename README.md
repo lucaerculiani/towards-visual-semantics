@@ -8,11 +8,10 @@ The dataset used in available [here](https://figshare.com/articles/dataset/small
 How to run the code
 ------------
 
-1- Download and unzip the dataset
 
-2 - Create a python conda environment using environment.yml and activate it 
+1 - Create a python conda environment using environment.yml and activate it 
 
-3- Run runexp.sh
+2- Run runexp.sh
 
 The plots will appear in the folder `outputs/`
 
