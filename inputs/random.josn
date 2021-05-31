@@ -9,7 +9,7 @@
  "setting": null,
  "dataset": {
   "split_seed": 2,
-  "descriptor": "experiments/gd/descriptors/ambiguity.json",
+  "descriptor": "descriptor.json",
   "dl_args": {},
   "pre_embedded": true,
   "metadata": ["ambiguous", "class"], 
