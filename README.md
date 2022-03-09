@@ -1,7 +1,7 @@
 Continual egocentric object recognition
 ==============
 
-Code for the paper available on [arXiv](https://arxiv.org/pdf/1912.05029.pdf), under review at SNNCS
+Code for the paper available on [arXiv](https://arxiv.org/pdf/1912.05029.pdf), and accepted at  SNCS
 The dataset used in available [here](https://figshare.com/articles/dataset/small_re-identification_dataset_with_classes/14706003)
 
 
